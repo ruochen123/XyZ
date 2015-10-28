@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="gray">#aaaaaa</color>
+    
+    <color name="actionbar">#ffff0000</color>
+    <color name="actionbar_tab">#ffee0000</color>
+    
+    <color name="small_play">#aa00ff00</color>
+</resources>

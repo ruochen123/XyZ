@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ll_small_play"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/small_play"
+    android:orientation="horizontal" >
+    
+    <ImageButton android:id="@+id/ib_small_pic"
+        android:layout_width="50dp"
+        android:layout_height="match_parent"
+        android:layout_marginRight="5dp"
+        android:background="#00000000"
+        android:layout_gravity="center_vertical"
+        android:src="@drawable/album_default"/>
+   
+ 
+    <LinearLayout android:orientation="vertical"
+        android:layout_marginTop="3dp"
+        android:layout_marginBottom="3dp"
+        android:layout_weight="1"
+        android:layout_width="0dp"
+        android:layout_height="match_parent">
+        
+       	<TextView android:id="@+id/tv_title"
+       	    android:layout_width="wrap_content"
+       	    android:layout_height="wrap_content"
+       	    android:singleLine="true"
+       	    android:maxLength="30"
+       	    android:background="#00000000"
+       	    android:layout_weight="1"
+       	    android:text="@string/unknown"/>
+       	
+       	<TextView android:id="@+id/tv_singer"
+       	    android:layout_width="wrap_content"
+       	    android:layout_height="wrap_content"
+       	    android:singleLine="true"
+       	    android:maxLength="30"
+       	    android:background="#00000000"
+       	    android:layout_weight="1"
+       	    android:text="@string/unknown"/>
+       	
+    </LinearLayout>
+    
+    <LinearLayout android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:orientation="horizontal">
+        
+         
+        <ImageButton android:id="@+id/ib_pause"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="#00000000"
+            
+            android:layout_margin="10dp"
+            android:src="@drawable/start"/>
+               
+        <ImageButton android:id="@+id/ib_next"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="#00000000"
+            android:layout_margin="10dp"
+            android:src="@drawable/next"/>
+
+        
+    </LinearLayout>
+
+</LinearLayout>

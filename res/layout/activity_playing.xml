@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+ 
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    >
+    
+    <TextView 
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:text="歌词"/>
+
+    
+	<RelativeLayout  
+	    android:layout_width="match_parent"
+	    android:layout_height="wrap_content"
+	 	android:background="@color/small_play"
+	    android:padding="10dp" >
+	    
+	   	<RelativeLayout android:id="@+id/ll_tmp"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	         >
+	        
+	        <TextView android:id="@+id/tv_cur_time"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:textColor="#ffffffff"
+	            android:layout_centerVertical="true"
+	            android:layout_alignParentLeft="true"
+	            android:text="@string/unknown_time" />
+	        
+	        	        
+	        <TextView android:id="@+id/tv_total_time"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:layout_centerVertical="true"
+	            android:layout_alignParentRight="true"
+	            android:textColor="#ffffffff"
+	            android:text="@string/unknown_time"/>
+	        
+		   	<SeekBar android:id="@+id/sb_play_progress"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:layout_toRightOf="@id/tv_cur_time"
+		        android:layout_toLeftOf="@id/tv_total_time"
+		       
+		       />
+
+	        
+	    </RelativeLayout>
+	    
+
+	    
+	 	<LinearLayout
+	 	    android:id="@+id/rl_control_panel"
+	 	    android:layout_width="match_parent"
+	 	    android:layout_height="wrap_content"
+	 	    android:orientation="horizontal"
+	 	    android:layout_below="@id/ll_tmp"
+	 	    android:paddingBottom="10dp"
+	 	    android:paddingTop="10dp" >
+	 	    
+	 	    <ImageButton android:id="@+id/ib_play_mode"
+	 	        android:layout_width="wrap_content"
+	 	        android:layout_height="wrap_content" 
+	 	        android:background="#00000000"
+	 	        android:layout_weight="1"/>
+	 	    
+	 	    <ImageButton android:id="@+id/ib_pre"
+	 	        android:layout_width="wrap_content"
+	 	        android:layout_height="wrap_content"
+	 	        android:background="#00000000"
+	 	        android:src="@drawable/pre"
+	 	        android:layout_weight="1"/>
+	 	    
+	 	    <ImageButton android:id="@+id/ib_pause"
+	 	        android:layout_width="wrap_content"
+	 	        android:layout_height="wrap_content"
+	 	        android:background="#00000000"
+	 	        android:layout_weight="1"/>
+	 	    
+	 	    <ImageButton android:id="@+id/ib_next"
+	 	        android:layout_width="wrap_content"
+	 	        android:layout_height="wrap_content"
+	 	        android:background="#00000000"
+	 	        android:src="@drawable/next"
+	 	        android:layout_weight="1"/>
+	 	    
+	 	    <ImageButton android:id="@+id/ib_play_list"
+	 	        android:layout_width="wrap_content"
+	 	        android:layout_height="wrap_content"
+	 	        android:background="#00000000"
+	 	        android:src="@drawable/list"
+	 	        android:layout_weight="1"/>
+	 	    
+	 	</LinearLayout> 
+	    
+	</RelativeLayout>
+    
+</LinearLayout>
