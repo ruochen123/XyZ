@@ -10,7 +10,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.ImageButton;
+import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
@@ -25,16 +27,27 @@ public class CatelogAdapter extends SimpleAdapter
 	private LayoutInflater mInflater;
 	private Context mContext;
  
+	private boolean mActionModeStarted;
 	
 	public CatelogAdapter(Context context, List<? extends Map<String, ?>> data,
-			int resource, String[] from, int[] to)
+			int resource, String[] from, int[] to, boolean isStarted)
 	{
 		super(context, data, resource, from, to);
 		
 		mContext = context;
 		mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		mActionModeStarted = isStarted;
 	}
 
+	public void setActionModeStarted(boolean started)
+	{
+		mActionModeStarted = started;
+	}
+	public boolean isActionModeStarted()
+	{
+		return mActionModeStarted;
+	}
+	
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent)
 	{
@@ -46,7 +59,7 @@ public class CatelogAdapter extends SimpleAdapter
 			holder.name = (TextView) convertView.findViewById(R.id.tv_playlist_name);
 			holder.num = (TextView) convertView.findViewById(R.id.tv_playlist_num);
 			holder.delete = (ImageButton) convertView.findViewById(R.id.ib_delete_playlist);
-			
+			holder.checkbox = (CheckBox) convertView.findViewById(R.id.cb_checked);
 			convertView.setTag(holder);
 		}
 		else
@@ -57,33 +70,51 @@ public class CatelogAdapter extends SimpleAdapter
 		final String name = map.get(CATELOG_NAME);
 		holder.name.setText(name);
 		holder.num.setText(map.get(CATELOG_COUNT));
-		holder.delete.setOnClickListener(new OnClickListener()
+
+		
+		if (isActionModeStarted())
 		{
-			@Override
-			public void onClick(View v)
+			if (holder.checkbox.getVisibility() == View.GONE)
 			{
-				AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-				builder.setTitle("确定删除 " + name + " 吗？");
-				builder.setPositiveButton(R.string.ok_dialog, new DialogInterface.OnClickListener()
-				{
-					@Override
-					public void onClick(DialogInterface dialog, int which)
-					{
-						CatelogUtils.deleteCatelog(mContext, name);
-					}
-				});
-				builder.setNegativeButton(R.string.cancel_dialog, new DialogInterface.OnClickListener()
-				{
-					@Override
-					public void onClick(DialogInterface dialog, int which)
-					{
-						dialog.dismiss();
-					}
-				});
-				builder.setCancelable(true);
-				builder.create().show();
+				holder.checkbox.setVisibility(View.VISIBLE);
 			}
-		});
+			ListView listView = (ListView) parent;
+			holder.checkbox.setChecked(listView.isItemChecked(position));
+		}
+		else
+		{
+			if (holder.checkbox.getVisibility() == View.VISIBLE)
+			{
+				holder.checkbox.setVisibility(View.GONE);
+			}
+			holder.delete.setOnClickListener(new OnClickListener()
+			{
+				@Override
+				public void onClick(View v)
+				{
+					AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+					builder.setTitle("确定删除 " + name + " 吗？");
+					builder.setPositiveButton(R.string.ok_dialog, new DialogInterface.OnClickListener()
+					{
+						@Override
+						public void onClick(DialogInterface dialog, int which)
+						{
+							CatelogUtils.deleteCatelog(mContext, name);
+						}
+					});
+					builder.setNegativeButton(R.string.cancel_dialog, new DialogInterface.OnClickListener()
+					{
+						@Override
+						public void onClick(DialogInterface dialog, int which)
+						{
+							dialog.dismiss();
+						}
+					});
+					builder.setCancelable(true);
+					builder.create().show();
+				}
+			});
+		}
 		
 		return convertView;
 	}
@@ -93,6 +124,7 @@ public class CatelogAdapter extends SimpleAdapter
 		TextView name;
 		TextView num;
 		ImageButton delete;
+		CheckBox checkbox;
 	}
 	
 }

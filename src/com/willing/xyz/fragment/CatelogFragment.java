@@ -15,16 +15,23 @@ import android.os.FileObserver;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarActivity;
+import android.util.SparseBooleanArray;
+import android.view.ActionMode;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.AbsListView.MultiChoiceModeListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -36,12 +43,15 @@ import com.willing.xyz.entity.Catelog;
 import com.willing.xyz.util.CatelogUtils;
 
 
-public class CatelogFragment extends BaseFragment implements LoaderCallbacks<ArrayList<Catelog>>
+public class CatelogFragment extends BaseFragment implements LoaderCallbacks<ArrayList<Catelog>> 
 {
 	private static final int	LOADER_ID	= 3;
 	private ListView 		mPlaylistListView;
+	private CatelogAdapter 	mAdapter;
 	private Button 			mNewPlaylist;
-	private Button			mSettle; 
+	
+	private boolean 	mIsActionModeStarted;
+	private View	mHeader;
 	
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -62,9 +72,103 @@ public class CatelogFragment extends BaseFragment implements LoaderCallbacks<Arr
 	{
 		mPlaylistListView = (ListView)view.findViewById(R.id.lv_playlist);
 		mNewPlaylist = (Button) view.findViewById(R.id.bt_new_playlist);
-		mSettle = (Button) view.findViewById(R.id.bt_settle);
+		mHeader = view.findViewById(R.id.ll_header);
 	 
-		setListViewAdapter(null);
+//		setListViewAdapter(null);
+		mPlaylistListView.setMultiChoiceModeListener(new MultiChoiceModeListener()
+		{
+			@Override
+			public boolean onPrepareActionMode(ActionMode mode, Menu menu)
+			{
+				// TODO Auto-generated method stub
+				return false;
+			}
+			
+			@Override
+			public void onDestroyActionMode(ActionMode mode)
+			{
+				mAdapter.setActionModeStarted(false);
+				mIsActionModeStarted = false;
+				mAdapter.notifyDataSetChanged();
+				
+				// 显示ActionBar的Tab
+				ActionBarActivity activity = (ActionBarActivity)getActivity();
+				ActionBar actionbar = activity.getSupportActionBar();
+				actionbar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+				mHeader.setVisibility(View.VISIBLE);
+			}
+			
+			@Override
+			public boolean onCreateActionMode(ActionMode mode, Menu menu)
+			{
+				mode.getMenuInflater().inflate(R.menu.delete, menu);
+				
+				mHeader.setVisibility(View.GONE);
+				
+				// 隐藏ActionBar的Tab
+				ActionBarActivity activity = (ActionBarActivity)getActivity();
+				ActionBar actionbar = activity.getSupportActionBar();
+				actionbar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
+				
+				mAdapter.setActionModeStarted(true);
+				mIsActionModeStarted = true;
+				mAdapter.notifyDataSetChanged();
+				
+				return true;
+			}
+			
+			@Override
+			public boolean onActionItemClicked(ActionMode mode, MenuItem item)
+			{
+				switch (item.getItemId())
+				{
+				case R.id.delete:
+					
+					AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+					builder.setTitle("确定删除所选列表？");
+					builder.setPositiveButton(R.string.ok_dialog, new DialogInterface.OnClickListener()
+					{
+						@Override
+						public void onClick(DialogInterface dialog, int which)
+						{
+							Map<String, String> map = null;
+							ArrayList<String> catelogs = new ArrayList<String>();
+							SparseBooleanArray checked =  mPlaylistListView.getCheckedItemPositions();
+							for (int i = 0; i < checked.size(); ++i)
+							{
+								map = (Map<String, String>) mAdapter.getItem(checked.keyAt(i));
+								catelogs.add(map.get(CatelogAdapter.CATELOG_NAME));
+							}
+							
+							CatelogUtils.deleteCatelogs(getActivity(), catelogs);
+						}
+					});
+					builder.setNegativeButton(R.string.cancel_dialog, new DialogInterface.OnClickListener()
+					{
+						@Override
+						public void onClick(DialogInterface dialog, int which)
+						{
+							dialog.dismiss();
+						}
+					});
+					builder.setCancelable(true);
+					builder.create().show();
+					
+					return true;
+				}
+				return false;
+			}
+			
+			@Override
+			public void onItemCheckedStateChanged(ActionMode mode, int position,
+					long id, boolean checked)
+			{
+				View view = mPlaylistListView.getChildAt(position - mPlaylistListView.getFirstVisiblePosition());
+				CheckBox checkbox = (CheckBox) view.findViewById(R.id.cb_checked);
+				checkbox.setChecked(mPlaylistListView.isItemChecked(position));
+			}
+		});
+		mPlaylistListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
 	}
 	
 	private void setListViewAdapter(List<Map<String, String>> data)
@@ -83,12 +187,10 @@ public class CatelogFragment extends BaseFragment implements LoaderCallbacks<Arr
 			data = new ArrayList<Map<String, String>>();
 		}
 		
-		SimpleAdapter adapter = new CatelogAdapter(getActivity(), data, R.layout.catelog_item, from, to);
+		mAdapter = new CatelogAdapter(getActivity(), data, R.layout.catelog_item, from, to, mIsActionModeStarted);
 		
-		mPlaylistListView.setAdapter(adapter);
+		mPlaylistListView.setAdapter(mAdapter);
 	}
-
-
 
 	private void setupListener()
 	{
@@ -157,7 +259,6 @@ public class CatelogFragment extends BaseFragment implements LoaderCallbacks<Arr
 				
 			}
 		});
-		
 	}
 
 	
@@ -300,7 +401,8 @@ public class CatelogFragment extends BaseFragment implements LoaderCallbacks<Arr
 			}
 		}
 	}
-
+	
+ 
  
 	
 }

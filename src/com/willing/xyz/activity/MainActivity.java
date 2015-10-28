@@ -48,8 +48,6 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener
 		setupTabAndViewPager();
 	}
 
-
-
 	@Override
 	protected void onStart()
 	{
@@ -182,6 +180,7 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener
 		actionBar.addTab(
 				actionBar.newTab().setText("¸èÇú").setTabListener(adapter), 2);
 
+		 
 	}
 
 

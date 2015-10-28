@@ -5,7 +5,12 @@ import static com.willing.xyz.util.MusicDatabaseHelper.ARTIST;
 import static com.willing.xyz.util.MusicDatabaseHelper.DURATION;
 import static com.willing.xyz.util.MusicDatabaseHelper.PATH;
 import static com.willing.xyz.util.MusicDatabaseHelper.TITLE;
+
+import java.util.ArrayList;
+
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
@@ -13,15 +18,21 @@ import android.os.FileObserver;
 import android.provider.BaseColumns;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.AsyncTaskLoader;
-import android.support.v4.widget.SimpleCursorAdapter;
-import android.util.Log;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarActivity;
+import android.util.SparseBooleanArray;
+import android.view.ActionMode;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.AbsListView.MultiChoiceModeListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ListView;
 
 import com.willing.xyz.R;
@@ -29,17 +40,18 @@ import com.willing.xyz.adapter.AllSongAdapter;
 import com.willing.xyz.entity.Music;
 import com.willing.xyz.util.MusicDatabaseHelper;
 import com.willing.xyz.util.PlayAllSongTask;
+import com.willing.xyz.util.SongUtils;
 
 public class AllSongFragment extends BaseFragment implements
 		LoaderCallbacks<Cursor>
 {
 	
 	private ListView			mAllSongListView;
-	private SimpleCursorAdapter 		mListAdapter;
+	private AllSongAdapter 		mListAdapter;
 	private Button				mPlayAllSong;
-	private Button				mSettle;
 
 	private PlayAllSongTask playAllsongTask;
+	private View	mHeader;
 	
 	private static final int	LOADER_ID	= 1;
 
@@ -73,7 +85,7 @@ public class AllSongFragment extends BaseFragment implements
 	{
 		mAllSongListView = (ListView) view.findViewById(R.id.lv_allsong);
 		mPlayAllSong = (Button) view.findViewById(R.id.bt_play_allsong);
-		mSettle = (Button) view.findViewById(R.id.bt_settle);
+		mHeader = view.findViewById(R.id.ll_header);
 		
 		String[] from = 
 			{
@@ -91,6 +103,123 @@ public class AllSongFragment extends BaseFragment implements
 		mListAdapter = new AllSongAdapter(getActivity(), R.layout.song_item, null, from, to);
 		
 		mAllSongListView.setAdapter(mListAdapter);
+		mAllSongListView.setMultiChoiceModeListener(new MultiChoiceModeListener()
+		{
+			@Override
+			public boolean onPrepareActionMode(ActionMode mode, Menu menu)
+			{
+				// TODO Auto-generated method stub
+				return false;
+			}
+			
+			@Override
+			public void onDestroyActionMode(ActionMode mode)
+			{
+				mListAdapter.setActionModeStarted(false);
+				 
+				mListAdapter.notifyDataSetChanged();
+				
+				// 显示ActionBar的Tab
+				ActionBarActivity activity = (ActionBarActivity)getActivity();
+				ActionBar actionbar = activity.getSupportActionBar();
+				actionbar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+				mHeader.setVisibility(View.VISIBLE);
+			}
+			
+			@Override
+			public boolean onCreateActionMode(ActionMode mode, Menu menu)
+			{
+				mode.getMenuInflater().inflate(R.menu.song, menu);
+				
+				mHeader.setVisibility(View.GONE);
+				
+				// 隐藏ActionBar的Tab
+				ActionBarActivity activity = (ActionBarActivity)getActivity();
+				ActionBar actionbar = activity.getSupportActionBar();
+				actionbar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
+				
+				mListAdapter.setActionModeStarted(true);
+				 
+				mListAdapter.notifyDataSetChanged();
+				
+				return true;
+			}
+			
+			@Override
+			public boolean onActionItemClicked(ActionMode mode, MenuItem item)
+			{
+				switch (item.getItemId())
+				{
+				case R.id.delete:
+					
+					AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+					builder.setTitle("确定删除所选歌曲？");
+					builder.setPositiveButton(R.string.ok_dialog, new DialogInterface.OnClickListener()
+					{
+						@Override
+						public void onClick(DialogInterface dialog, int which)
+						{
+							Cursor cursor = null;
+							ArrayList<String> musics = new ArrayList<String>();
+							SparseBooleanArray checked =  mAllSongListView.getCheckedItemPositions();
+							for (int i = 0; i < checked.size(); ++i)
+							{
+								cursor = (Cursor) mListAdapter.getItem(checked.keyAt(i));
+								musics.add(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.PATH)));
+							}
+							
+							SongUtils.deleteSongs(getActivity(), musics);
+						}
+					});
+					builder.setNegativeButton(R.string.cancel_dialog, new DialogInterface.OnClickListener()
+					{
+						@Override
+						public void onClick(DialogInterface dialog, int which)
+						{
+							dialog.dismiss();
+						}
+					});
+					builder.setCancelable(true);
+					builder.create().show();
+					
+					return true;
+				case R.id.add_to_catelog:
+					
+					Music music = null;
+					Cursor cursor = null;
+					ArrayList<Music> musics = new ArrayList<Music>();
+					SparseBooleanArray checked =  mAllSongListView.getCheckedItemPositions();
+					for (int i = 0; i < checked.size(); ++i)
+					{
+						cursor = (Cursor) mListAdapter.getItem(checked.keyAt(i));
+						music = new Music();
+						music.setAlbum(cursor.getString(cursor.getColumnIndex(ALBUM)));
+						music.setTitle(cursor.getString(cursor.getColumnIndex(TITLE)));
+						music.setPath(cursor.getString(cursor.getColumnIndex(PATH)));
+						music.setArtist(cursor.getString(cursor.getColumnIndex(ARTIST)));
+						music.setDuration(cursor.getInt(cursor.getColumnIndex(DURATION)));
+						
+						musics.add(music);
+					}
+					
+					
+					SongUtils.addToCatelogDialog(getActivity(), musics);
+					
+					return true;
+				}
+				return false;
+			}
+			
+			@Override
+			public void onItemCheckedStateChanged(ActionMode mode, int position,
+					long id, boolean checked)
+			{
+				View view = mAllSongListView.getChildAt(position - mAllSongListView.getFirstVisiblePosition());
+				CheckBox checkbox = (CheckBox) view.findViewById(R.id.cb_checked);
+				checkbox.setChecked(mAllSongListView.isItemChecked(position));
+			}
+		});
+		mAllSongListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
 	}
 
 	private void setupListener()
@@ -129,15 +258,6 @@ public class AllSongFragment extends BaseFragment implements
 			}
 		});
 
-		mSettle.setOnClickListener(new OnClickListener()
-		{
-
-			@Override
-			public void onClick(View v)
-			{
-
-			}
-		});
 	}
 
 //#start LoaderCallback方法

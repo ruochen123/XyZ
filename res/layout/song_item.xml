@@ -6,9 +6,16 @@
     android:descendantFocusability="blocksDescendants"
     >
     
+    <CheckBox android:id="@+id/cb_checked"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:layout_centerVertical="true"/>
+    
     <RelativeLayout android:id="@+id/ll_tmp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/cb_checked">
  
 	   	<TextView android:id="@+id/tv_title"
 		   android:layout_width="wrap_content"

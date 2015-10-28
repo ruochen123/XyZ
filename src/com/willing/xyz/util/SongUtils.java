@@ -23,6 +23,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.support.v4.app.FragmentActivity;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
@@ -44,7 +45,7 @@ import com.willing.xyz.service.MusicPlayService;
 
 public class SongUtils
 {
-	public static void addToCatelogDialog(final Context context, final Music music)
+	public static void addToCatelogDialog(final Context context, final ArrayList<Music> musics)
 	{
 		AlertDialog.Builder builder = new AlertDialog.Builder(context);
 		builder.setTitle(R.string.add_to_catelog);
@@ -73,13 +74,14 @@ public class SongUtils
 			@Override
 			public void onClick(DialogInterface dialog, int which)
 			{
-				CatelogUtils.addToCatelog(context, strs[which], music);
+				CatelogUtils.addToCatelog(context, strs[which], musics);
 			}
 		});
 		
 		builder.setCancelable(true);
 		builder.create().show();
 	}
+ 
 	
 	private static String[] readCatelogs(Context context)
 	{
@@ -121,7 +123,7 @@ public class SongUtils
 		return music;
 	}
 	
-	public static void deleteSongDialog(final Context context, final Music music, final boolean fromCatelog, final String catelog)
+	public static void deleteSongDialog(final Context context, final Music music, final boolean fromCatelog, final String catelogName)
 	{
 		AlertDialog.Builder builder = new AlertDialog.Builder(context);
 		builder.setTitle("确定删除 " + music.getTitle() + " 吗?");
@@ -134,16 +136,7 @@ public class SongUtils
 				@Override
 				public void onClick(DialogInterface dialog, int which)
 				{
-					ArrayList<Music> musics = CatelogUtils.readCatelogItem(context, catelog);
-					musics.remove(music);
-					CatelogUtils.writeCatelogItem(context, catelog, musics);	
-					
-					ArrayList<Catelog> catelogs = CatelogUtils.readCatelogs(context);
-					Catelog cate = new Catelog(catelog, 0);
-					int index = catelogs.indexOf(cate);
-					cate = catelogs.get(index);
-					cate.setCount(cate.getCount() - 1);
-					CatelogUtils.writeCatelogs(context, catelogs);
+					CatelogUtils.deleteFromCatelog(context, catelogName, music);
 				}
 			});
 		}
@@ -152,57 +145,12 @@ public class SongUtils
 		{
 			@Override
 			public void onClick(DialogInterface dialog, int which)
-			{
-				// 删除文件
-				File file = new File(music.getPath());
-				boolean successed = file.delete();
-				// 更新数据库
-				
-				if (successed)
-				{
-					MusicDatabaseHelper helper = new MusicDatabaseHelper(context);
-					SQLiteDatabase db = helper.getWritableDatabase();
-					
-					db.delete(MusicDatabaseHelper.TABLE_NAME, 
-							MusicDatabaseHelper.PATH + " = ? ", new String[]{music.getPath()});
-					
-					db.releaseReference();
-					
-					// 改变Singer的文件，以通知Singer
-					try
-					{
-						FileOutputStream out = context.openFileOutput(SingerFragment.SINGER_CHANGED_FILE, Context.MODE_PRIVATE);
-						out.write((int) System.currentTimeMillis());
-						out.close();
-						
-						out = context.openFileOutput(SingerItemActivity.SINGER_ITEM_CHANGED_FILE, Context.MODE_PRIVATE);
-						out.write((int)System.currentTimeMillis());
-						out.close();
-						
-					} 
-					catch (IOException e)
-					{
-						 
-						e.printStackTrace();
-					}
-					
-					
-				}
-					
-				if (successed)
+			{		
+				if (deleteSong(context, music))
 				{
 					if (fromCatelog)
 					{
-						ArrayList<Music> musics = CatelogUtils.readCatelogItem(context, catelog);
-						musics.remove(music);
-						CatelogUtils.writeCatelogItem(context, catelog, musics);	
-						
-						ArrayList<Catelog> catelogs = CatelogUtils.readCatelogs(context);
-						Catelog cate = new Catelog(catelog, 0);
-						int index = catelogs.indexOf(cate);
-						cate = catelogs.get(index);
-						cate.setCount(cate.getCount() - 1);
-						CatelogUtils.writeCatelogs(context, catelogs);
+						CatelogUtils.deleteFromCatelog(context, catelogName, music);
 					}
 					Toast.makeText(context, R.string.delete_successed, Toast.LENGTH_SHORT).show();
 				}
@@ -296,6 +244,87 @@ public class SongUtils
 				service.playNewMusic();
 			}
 		});
+	}
+
+	public static boolean deleteSong(Context context, Music music)
+	{
+		// 删除文件
+		File file = new File(music.getPath());
+		boolean successed = file.delete();
+		// 更新数据库
+		
+		if (successed)
+		{
+			MusicDatabaseHelper helper = new MusicDatabaseHelper(context);
+			SQLiteDatabase db = helper.getWritableDatabase();
+			
+			db.delete(MusicDatabaseHelper.TABLE_NAME, 
+					MusicDatabaseHelper.PATH + " = ? ", new String[]{music.getPath()});
+			
+			db.releaseReference();
+			
+			// 改变Singer的文件，以通知Singer
+			try
+			{
+				FileOutputStream out = context.openFileOutput(SingerFragment.SINGER_CHANGED_FILE, Context.MODE_PRIVATE);
+				out.write((int) System.currentTimeMillis());
+				out.close();
+				
+				out = context.openFileOutput(SingerItemActivity.SINGER_ITEM_CHANGED_FILE, Context.MODE_PRIVATE);
+				out.write((int)System.currentTimeMillis());
+				out.close();
+				
+			} 
+			catch (IOException e)
+			{ 
+				e.printStackTrace();
+			}
+			
+			
+		}
+		return successed;
+	}
+	
+	// 批量删除歌曲
+	public static void deleteSongs(Context context,
+			ArrayList<String> musics)
+	{
+		File file = null;
+		boolean successed = false;
+		MusicDatabaseHelper helper = new MusicDatabaseHelper(context);
+		SQLiteDatabase db = helper.getWritableDatabase();
+		for (int i = 0; i < musics.size(); ++i)
+		{
+			file = new File(musics.get(i));
+			successed = file.delete();
+			
+			// 更新数据库
+			if (successed)
+			{
+				db.delete(MusicDatabaseHelper.TABLE_NAME, 
+						MusicDatabaseHelper.PATH + " = ? ", new String[]{musics.get(i)});
+				
+				// 改变Singer的文件，以通知Singer
+				try
+				{
+					FileOutputStream out = context.openFileOutput(SingerFragment.SINGER_CHANGED_FILE, Context.MODE_PRIVATE);
+					out.write((int) System.currentTimeMillis());
+					out.close();
+					
+					out = context.openFileOutput(SingerItemActivity.SINGER_ITEM_CHANGED_FILE, Context.MODE_PRIVATE);
+					out.write((int)System.currentTimeMillis());
+					out.close();
+					
+				} 
+				catch (IOException e)
+				{
+					e.printStackTrace();
+				}
+			
+			}
+		}
+
+		db.releaseReference();
 	}
 
 

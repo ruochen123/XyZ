@@ -27,4 +27,6 @@
     <string name="action_search">设置</string>
      
     <string name="delete_from_catelog">从列表删除</string>
+    
+    <string name="is_delete_invalid_song">该歌曲以被删除。\n是否删除播放列表中的所有无效项？</string>
 </resources>

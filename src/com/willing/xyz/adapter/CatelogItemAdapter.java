@@ -2,10 +2,9 @@ package com.willing.xyz.adapter;
 
 import static com.willing.xyz.util.MusicDatabaseHelper.ALBUM;
 import static com.willing.xyz.util.MusicDatabaseHelper.ARTIST;
-import static com.willing.xyz.util.MusicDatabaseHelper.DURATION;
-import static com.willing.xyz.util.MusicDatabaseHelper.PATH;
 import static com.willing.xyz.util.MusicDatabaseHelper.TITLE;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -14,7 +13,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.ImageButton;
+import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
@@ -29,7 +30,8 @@ public class CatelogItemAdapter extends SimpleAdapter
 	
 	private String mCatelog;
 	
-
+	private boolean mActionModeStarted;
+	
 	public CatelogItemAdapter(Context context,
 			List<? extends Map<String, ?>> data, int resource, String[] from,
 			int[] to, String catelog)
@@ -41,6 +43,16 @@ public class CatelogItemAdapter extends SimpleAdapter
 		mCatelog = catelog;
 	}
 
+	public void setActionModeStarted(boolean started)
+	{
+		mActionModeStarted = started;
+	}
+	public boolean isActionModeStarted()
+	{
+		return mActionModeStarted;
+	}
+	
+	
 	@Override
 	public View getView(final int position, View convertView, ViewGroup viewGroup)
 	{
@@ -53,7 +65,7 @@ public class CatelogItemAdapter extends SimpleAdapter
 			holder.singer = (TextView) convertView.findViewById(R.id.tv_singer);
 			holder.album = (TextView) convertView.findViewById(R.id.tv_album);
 			holder.options = (ImageButton) convertView.findViewById(R.id.ib_options);
-			
+			holder.checkbox = (CheckBox) convertView.findViewById(R.id.cb_checked);
 			convertView.setTag(holder);
 		}
 		else
@@ -67,54 +79,73 @@ public class CatelogItemAdapter extends SimpleAdapter
 		
 		final View optionsPanel = convertView.findViewById(R.id.options_panel);
 		optionsPanel.setVisibility(View.GONE);
-		holder.options.setOnClickListener(new OnClickListener()
+	
+		if (isActionModeStarted())
 		{
-			@Override
-			public void onClick(View v)
+			if (holder.checkbox.getVisibility() == View.GONE)
 			{
-				if (optionsPanel.getVisibility() == View.GONE)
-				{
-					optionsPanel.setVisibility(View.VISIBLE);
-					 
-				}
-				else
-				{
-					optionsPanel.setVisibility(View.GONE);
-				}
-				View addToCatelog = optionsPanel.findViewById(R.id.add_to_catelog);
-				View delete = optionsPanel.findViewById(R.id.delete_song);
-				View info = optionsPanel.findViewById(R.id.song_info);
-				
-				addToCatelog.setOnClickListener(new OnClickListener()
-				{
-					@Override
-					public void onClick(View v)
-					{
-						SongUtils.addToCatelogDialog(mContext, SongUtils.mapToMusic(map));
-					}
-				});
-			
-				delete.setOnClickListener(new OnClickListener()
-				{
-					
-					@Override
-					public void onClick(View v)
-					{
-						SongUtils.deleteSongDialog(mContext, SongUtils.mapToMusic(map), true, mCatelog);
-
-					}
-				});
-			
-				info.setOnClickListener(new OnClickListener()
-				{
-					@Override
-					public void onClick(View v)
-					{
-						SongUtils.infoDialog(mContext, SongUtils.mapToMusic(map));
-					}
-				});
+				holder.checkbox.setVisibility(View.VISIBLE);
 			}
-		});
+			ListView listView = (ListView) viewGroup;
+			holder.checkbox.setChecked(listView.isItemChecked(position));
+		}
+		else
+		{
+			if (holder.checkbox.getVisibility() == View.VISIBLE)
+			{
+				holder.checkbox.setVisibility(View.GONE);
+			}
+			holder.options.setOnClickListener(new OnClickListener()
+			{
+				@Override
+				public void onClick(View v)
+				{
+					if (optionsPanel.getVisibility() == View.GONE)
+					{
+						optionsPanel.setVisibility(View.VISIBLE);
+						 
+					}
+					else
+					{
+						optionsPanel.setVisibility(View.GONE);
+					}
+					View addToCatelog = optionsPanel.findViewById(R.id.add_to_catelog);
+					View delete = optionsPanel.findViewById(R.id.delete_song);
+					View info = optionsPanel.findViewById(R.id.song_info);
+					
+					addToCatelog.setOnClickListener(new OnClickListener()
+					{
+						@Override
+						public void onClick(View v)
+						{
+							ArrayList<Music> musics = new ArrayList<Music>();
+							musics.add(SongUtils.mapToMusic(map));
+							SongUtils.addToCatelogDialog(mContext, musics);
+						}
+					});
+				
+					delete.setOnClickListener(new OnClickListener()
+					{
+						
+						@Override
+						public void onClick(View v)
+						{
+							SongUtils.deleteSongDialog(mContext, SongUtils.mapToMusic(map), true, mCatelog);
+
+						}
+					});
+				
+					info.setOnClickListener(new OnClickListener()
+					{
+						@Override
+						public void onClick(View v)
+						{
+							SongUtils.infoDialog(mContext, SongUtils.mapToMusic(map));
+						}
+					});
+				}
+			});
+		}
 		
 		
 		return convertView;
@@ -126,5 +157,6 @@ public class CatelogItemAdapter extends SimpleAdapter
 		TextView singer;
 		TextView album;
 		ImageButton options;
+		CheckBox checkbox;
 	}
 }

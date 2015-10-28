@@ -78,7 +78,7 @@ public class SingerFragment extends BaseFragment implements LoaderCallbacks<Arra
 	{
 		mSingerListView = (ListView) view.findViewById(R.id.lv_singer);
 		
-		setListViewAdapter(null);
+//		setListViewAdapter(null);
 	}
 	
 	private void setListViewAdapter(List<Map<String, String>> data)

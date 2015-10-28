@@ -15,16 +15,20 @@ import java.util.Iterator;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.support.v4.app.FragmentActivity;
+import android.util.SparseBooleanArray;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import com.willing.xyz.R;
 import com.willing.xyz.XyzApplication;
+import com.willing.xyz.activity.CatelogItemActivity;
 import com.willing.xyz.entity.Catelog;
 import com.willing.xyz.entity.Music;
 
 public class CatelogUtils
 {
+	// 读取存储列表信息的汇总文件
 	public static ArrayList<Catelog> readCatelogs(Context context) 
 	{
 		ArrayList<Catelog> list = new ArrayList<Catelog>();
@@ -73,6 +77,7 @@ public class CatelogUtils
 		return list;
 	}
 
+	// 写列表到总文件
 	public static void writeCatelogs(Context context, ArrayList<Catelog> catelogs)
 	{
 		DataOutputStream outData = null;
@@ -117,6 +122,7 @@ public class CatelogUtils
 		}
 	}
 	
+	// 得到所有列表的名字
 	public static ArrayList<String> getCatelogsName(Context context)
 	{
 		ArrayList<Catelog> list = readCatelogs(context);
@@ -135,6 +141,7 @@ public class CatelogUtils
 		return catelogs;
 	}
 	
+	// 创建新列表
 	public static boolean createCatelog(Context context, String name)
 	{
  
@@ -169,6 +176,7 @@ public class CatelogUtils
 		return successed;
 	}
 
+	// 读取某个列表的所有歌曲
 	public static ArrayList<Music> readCatelogItem(Context context, String catelog)
 	{
 		ArrayList<Music> list = new ArrayList<Music>();
@@ -218,6 +226,7 @@ public class CatelogUtils
 		return list;
 	}
 
+	// 写歌曲到某个列表
 	public static void writeCatelogItem(Context context, String catelog, ArrayList<Music> musics)
 	{
 		DataOutputStream outData = null;
@@ -269,6 +278,7 @@ public class CatelogUtils
 		}
 	}
 	
+	// 删除某个列表
 	public static void deleteCatelog(Context context, String name)
 	{
 		// 删除catelog文件
@@ -287,7 +297,32 @@ public class CatelogUtils
 
 		
 	}
+	
+	// 删除多个列表
+	public static void deleteCatelogs(Context context, ArrayList<String> strs)
+	{
+		ArrayList<Catelog> catelogs = readCatelogs(context);
+		Catelog catelog = null;
+		for (int i = 0; i < strs.size(); ++i)
+		{
+			catelog = new Catelog(strs.get(i), 0);
+			catelogs.remove(catelog);
+		}
+		writeCatelogs(context, catelogs);
+		
+		// 删除catelog文件
+		File dir = context.getDir(XyzApplication.CATELOG_DIR, Context.MODE_PRIVATE);
+		File file = null;
+		String path = null;
+		for (int i = 0; i < strs.size(); ++i)
+		{
+			path = dir.getAbsolutePath() + File.separator + strs.get(i);
+			file = new File(path);
+			file.delete();
+		}
+	}
 
+	// 显示新建列表对话框
 	public static void newCatelogDialog(final Context context)
 	{
 		AlertDialog.Builder build = new AlertDialog.Builder(context);
@@ -333,7 +368,8 @@ public class CatelogUtils
 		
 	}
 
-	public static void addToCatelog(Context context, String catelog, Music music)
+	// 增加歌曲到某个列表
+	public static void addToCatelog(Context context, String catelog, ArrayList<Music> music) 
 	{
 		// 总列表中对应列表加一
 		ArrayList<Catelog> catelogs = readCatelogs(context);
@@ -345,19 +381,78 @@ public class CatelogUtils
 		Catelog log = new Catelog(catelog, 0);
 		int index = catelogs.indexOf(log);
 		log = catelogs.get(index);
- 		
+		
 		// 列表中保存歌曲信息
 		ArrayList<Music> musics = readCatelogItem(context, catelog);
-		if (!musics.contains(music))
+		for (int i = 0; i < music.size(); ++i)
 		{
-			musics.add(music);
-			log.inc();
-			
-			writeCatelogs(context, catelogs);
-			writeCatelogItem(context, catelog, musics);
+			if (!musics.contains(music.get(i)))
+			{
+				musics.add(music.get(i));
+				log.inc();
+			}	
 		}
-		
-		
+		writeCatelogs(context, catelogs);
+		writeCatelogItem(context, catelog, musics);
 	}
+	// 从列表中删除歌曲
+	public static void deleteFromCatelog(Context context, String catelogName, Music music)
+	{
+		ArrayList<Music> musics = CatelogUtils.readCatelogItem(context, catelogName);
+		musics.remove(music);
+		CatelogUtils.writeCatelogItem(context, catelogName, musics);	
+		
+		ArrayList<Catelog> catelogs = CatelogUtils.readCatelogs(context);
+		Catelog cate = new Catelog(catelogName, 0);
+		int index = catelogs.indexOf(cate);
+		cate = catelogs.get(index);
+		cate.setCount(cate.getCount() - 1);
+		CatelogUtils.writeCatelogs(context, catelogs);
+	}
+	
+	public static void deleteFromCatelog(Context context, String catelogName, ArrayList<Music> mu)
+	{
+		ArrayList<Music> musics = CatelogUtils.readCatelogItem(context, catelogName);
+		for (int i = 0; i < mu.size(); ++i)
+		{
+			musics.remove(mu.get(i));
+		}
+		CatelogUtils.writeCatelogItem(context, catelogName, musics);	
+		
+		ArrayList<Catelog> catelogs = CatelogUtils.readCatelogs(context);
+		Catelog cate = new Catelog(catelogName, 0);
+		int index = catelogs.indexOf(cate);
+		cate = catelogs.get(index);
+		cate.setCount(cate.getCount() - mu.size());
+		CatelogUtils.writeCatelogs(context, catelogs);
+	}
+	
+	// 删除列表中的无效项
+	public static void deleteInvalidFromCatelog(Context context, String catelogName)
+	{
+		ArrayList<Music> musics = CatelogUtils.readCatelogItem(context, catelogName);
+		Music music = null;
+		File file = null;
+		int deleteCount = 0;
+		for (Iterator<Music> ite = musics.iterator(); ite.hasNext(); )
+		{
+			music = ite.next();
+			file = new File(music.getPath());
+			if (!file.exists())
+			{
+				ite.remove();
+				deleteCount++;
+			}
+		}
+		CatelogUtils.writeCatelogItem(context, catelogName, musics);
+		
+		ArrayList<Catelog> catelogs = CatelogUtils.readCatelogs(context);
+		Catelog catelog = new Catelog(catelogName, 0); 
+		int index = catelogs.indexOf(catelog);
+		catelog = catelogs.get(index);
+		catelog.setCount(catelog.getCount() - deleteCount);
+		CatelogUtils.writeCatelogs(context, catelogs);
+	}
+
 
 }

@@ -12,37 +12,45 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import android.app.AlertDialog;
+import android.app.AlertDialog.Builder;
 import android.app.LoaderManager;
 import android.content.AsyncTaskLoader;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.Loader;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.FileObserver;
-import android.provider.BaseColumns;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
+import android.util.SparseBooleanArray;
+import android.view.ActionMode;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
+import android.widget.AbsListView.MultiChoiceModeListener;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 
 import com.willing.xyz.R;
 import com.willing.xyz.XyzApplication;
+import com.willing.xyz.adapter.CatelogAdapter;
 import com.willing.xyz.adapter.CatelogItemAdapter;
 import com.willing.xyz.entity.Catelog;
 import com.willing.xyz.entity.Music;
 import com.willing.xyz.util.CatelogUtils;
-import com.willing.xyz.util.MusicDatabaseHelper;
+import com.willing.xyz.util.SongUtils;
 
 public class CatelogItemActivity extends BaseActivity implements LoaderManager.LoaderCallbacks<ArrayList<Map<String, String>>>
 {
@@ -53,10 +61,15 @@ public class CatelogItemActivity extends BaseActivity implements LoaderManager.L
 	private Button mPlayAll;
 	private Button mSettle;
 	private ListView mPlaylistItemListView;
+	private CatelogItemAdapter mAdapter;
 	
 	private PlayAllSongTask mPlayAllSongTask;
 	
 	private String mCatelogName;
+	
+	private boolean 	mIsActionModeStarted;
+
+	private View	mHeader;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -114,12 +127,41 @@ public class CatelogItemActivity extends BaseActivity implements LoaderManager.L
 				music.setTitle(map.get(TITLE));
 				music.setDuration(Integer.parseInt(map.get(DURATION)));
 				
-				if (app.getPlayService() != null)
+				File file = new File(music.getPath());
+				if (!file.exists())
 				{
-					app.getPlayService().addToPlayList(music, true);
-					
-					Intent intent = new Intent(CatelogItemActivity.this, PlayingActivity.class);
-					startActivity(intent);
+					// 如果该文件不存在，则显示对话框，用来询问用户是否删除不存在歌曲
+					AlertDialog.Builder builder = new Builder(CatelogItemActivity.this);
+					builder.setMessage(R.string.is_delete_invalid_song);
+					builder.setPositiveButton(R.string.ok_dialog, new DialogInterface.OnClickListener()
+					{
+						@Override
+						public void onClick(DialogInterface dialog, int which)
+						{
+							CatelogUtils.deleteInvalidFromCatelog(CatelogItemActivity.this, mCatelogName);
+						}
+						 
+					});
+					builder.setNegativeButton(R.string.cancel_dialog, new DialogInterface.OnClickListener()
+					{
+						@Override
+						public void onClick(DialogInterface dialog, int which)
+						{
+							dialog.dismiss();
+						}
+					});
+					builder.setCancelable(true);
+					builder.create().show();
+				}
+				else
+				{
+					if (app.getPlayService() != null)
+					{
+						app.getPlayService().addToPlayList(music, true);
+						
+						Intent intent = new Intent(CatelogItemActivity.this, PlayingActivity.class);
+						startActivity(intent);
+					}
 				}
 			}
 		});
@@ -140,8 +182,172 @@ public class CatelogItemActivity extends BaseActivity implements LoaderManager.L
 	{
 		mPlaylistItemListView = (ListView) findViewById(R.id.lv_song);
 		mPlayAll = (Button) findViewById(R.id.bt_play_allsong);
+		mHeader = findViewById(R.id.ll_header);
+		
+	//	setListViewAdapter(null);
+		mPlaylistItemListView.setMultiChoiceModeListener(new MultiChoiceModeListener()
+		{
+			@Override
+			public boolean onPrepareActionMode(ActionMode mode, Menu menu)
+			{
+				// TODO Auto-generated method stub
+				return false;
+			}
+			
+			@Override
+			public void onDestroyActionMode(ActionMode mode)
+			{
+				mAdapter.setActionModeStarted(false);
+				mIsActionModeStarted = false;
+				mAdapter.notifyDataSetChanged();
+ 
+				mHeader.setVisibility(View.VISIBLE);
+			}
+			
+			@Override
+			public boolean onCreateActionMode(ActionMode mode, Menu menu)
+			{
+				mode.getMenuInflater().inflate(R.menu.catelog, menu);
+				
+				mHeader.setVisibility(View.GONE);
+ 			
+				mAdapter.setActionModeStarted(true);
+				mIsActionModeStarted = true;
+				mAdapter.notifyDataSetChanged();
+				
+				return true;
+			}
+			
+			@Override
+			public boolean onActionItemClicked(ActionMode mode, MenuItem item)
+			{
+				switch (item.getItemId())
+				{
+				case R.id.delete:
+					
+					AlertDialog.Builder builder = new AlertDialog.Builder(CatelogItemActivity.this);
+					builder.setTitle("确定删除所选列表？");
+					builder.setPositiveButton(R.string.ok_dialog, new DialogInterface.OnClickListener()
+					{
+						@Override
+						public void onClick(DialogInterface dialog, int which)
+						{
+							Map<String, String> map = null;
+							ArrayList<String> catelogs = new ArrayList<String>();
+							SparseBooleanArray checked =  mPlaylistItemListView.getCheckedItemPositions();
+							for (int i = 0; i < checked.size(); ++i)
+							{
+								map = (Map<String, String>) mAdapter.getItem(checked.keyAt(i));
+								catelogs.add(map.get(CatelogAdapter.CATELOG_NAME));
+							}
+							
+							CatelogUtils.deleteCatelogs(CatelogItemActivity.this, catelogs);
+						}
+					});
+					builder.setNegativeButton(R.string.cancel_dialog, new DialogInterface.OnClickListener()
+					{
+						@Override
+						public void onClick(DialogInterface dialog, int which)
+						{
+							dialog.dismiss();
+						}
+					});
+					builder.setCancelable(true);
+					builder.create().show();
+					
+					return true;
+				case R.id.add_to_catelog:
+					Map<String, String> map = null;
+					Music music = null;
+					ArrayList<Music> musics = new ArrayList<Music>();
+					SparseBooleanArray checked =  mPlaylistItemListView.getCheckedItemPositions();
+					for (int i = 0; i < checked.size(); ++i)
+					{
+						map = (Map<String, String>) mAdapter.getItem(checked.keyAt(i));
+						music = new Music();
+						music.setAlbum(map.get(ALBUM));
+						music.setArtist(map.get(ARTIST));
+						music.setPath(map.get(PATH));
+						music.setTitle(map.get(TITLE));
+						music.setDuration(Integer.parseInt(map.get(DURATION)));
+						
+						musics.add(music);
+					}
+					SongUtils.addToCatelogDialog(CatelogItemActivity.this, musics);
+					
+					return true;
+				case R.id.remove_from_catelog:
+					
+					AlertDialog.Builder builder2 = new AlertDialog.Builder(CatelogItemActivity.this);
+					builder2.setTitle("确定从列表中移除所选歌曲？");
+					builder2.setPositiveButton(R.string.ok_dialog, new DialogInterface.OnClickListener()
+					{
+						@Override
+						public void onClick(DialogInterface dialog, int which)
+						{
+							Map<String, String> map = null;
+							Music music = null;
+							ArrayList<Music> musics = new ArrayList<Music>();
+							SparseBooleanArray checked =  mPlaylistItemListView.getCheckedItemPositions();
+							for (int i = 0; i < checked.size(); ++i)
+							{
+								map = (Map<String, String>) mAdapter.getItem(checked.keyAt(i));
+								music = new Music();
+								music.setPath(map.get(PATH));
+								
+								musics.add(music);
+							}
+							CatelogUtils.deleteFromCatelog(CatelogItemActivity.this, mCatelogName, musics);
+						}
+					});
+					builder2.setNegativeButton(R.string.cancel_dialog, new DialogInterface.OnClickListener()
+					{
+						@Override
+						public void onClick(DialogInterface dialog, int which)
+						{
+							dialog.dismiss();
+						}
+					});
+					builder2.setCancelable(true);
+					builder2.create().show();
+
+					return true;
+				}
+				return false;
+			}
+			
+			@Override
+			public void onItemCheckedStateChanged(ActionMode mode, int position,
+					long id, boolean checked)
+			{
+				View view = mPlaylistItemListView.getChildAt(position - mPlaylistItemListView.getFirstVisiblePosition());
+				CheckBox checkbox = (CheckBox) view.findViewById(R.id.cb_checked);
+				checkbox.setChecked(mPlaylistItemListView.isItemChecked(position));
+			}
+		});
+		mPlaylistItemListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
 	}
 
+	private void setListViewAdapter(ArrayList<Map<String, String>> data)
+	{
+		String[] from = new String[]{
+				TITLE,
+				ARTIST,
+				ALBUM
+		};
+		int[] to = new int[]{
+			R.id.tv_title,
+			R.id.tv_singer,
+			R.id.tv_album
+		};
+		mAdapter = new CatelogItemAdapter(CatelogItemActivity.this,
+				data, R.layout.song_item, from, to, mCatelogName);
+		
+		if (mPlaylistItemListView != null)
+		{
+			mPlaylistItemListView.setAdapter(mAdapter);
+		}
+	}
 	@Override
 	public Intent getParentActivityIntent()
 	{
@@ -162,24 +368,7 @@ public class CatelogItemActivity extends BaseActivity implements LoaderManager.L
 	public void onLoadFinished(Loader<ArrayList<Map<String, String>>> arg0,
 			ArrayList<Map<String, String>> result)
 	{
-		String[] from = new String[]{
-				TITLE,
-				ARTIST,
-				ALBUM
-		};
-		int[] to = new int[]{
-			R.id.tv_title,
-			R.id.tv_singer,
-			R.id.tv_album
-		};
-		CatelogItemAdapter adapter = new CatelogItemAdapter(CatelogItemActivity.this,
-				result, R.layout.song_item, from, to, mCatelogName);
-		
-		if (mPlaylistItemListView != null)
-		{
-			mPlaylistItemListView.setAdapter(adapter);
-		}
-		
+		setListViewAdapter(result);
 	}
 
 	@Override
@@ -207,25 +396,11 @@ public class CatelogItemActivity extends BaseActivity implements LoaderManager.L
 			ArrayList<Music> musics = CatelogUtils.readCatelogItem(getContext(), mCatelogName);
 			ArrayList<Map<String, String>> result = new ArrayList<>();
 			
-//			int deleteCount = 0;
+ 
 			for (Iterator<Music> ite = musics.iterator(); ite.hasNext(); )
 			{
 				Music music = ite.next();
 				HashMap<String, String> map = new HashMap<String, String>();
-				
-//				MusicDatabaseHelper helper = new MusicDatabaseHelper(getContext());
-//				SQLiteDatabase db = helper.getWritableDatabase();
-//				
-//				Cursor cursor = db.query(MusicDatabaseHelper.TABLE_NAME,
-//						new String[]{BaseColumns._ID}, MusicDatabaseHelper.PATH + " = ? ", 
-//						new String[]{music.getPath()}, null, null, null);
-//				
-//				if (cursor == null || cursor.getCount() == 0)
-//				{	
-//					deleteCount++;
-//					ite.remove();
-//					continue;
-//				}
 				
 				map.put(ALBUM, music.getAlbum()); 
 				map.put(ARTIST, music.getArtist());
@@ -236,14 +411,7 @@ public class CatelogItemActivity extends BaseActivity implements LoaderManager.L
 				result.add(map);
 			}
 			
-//			CatelogUtils.writeCatelogItem(getContext(), mCatelogName, musics);
-//			
-//			ArrayList<Catelog> catelogs = CatelogUtils.readCatelogs(getContext());
-//		 
-//			int index = catelogs.indexOf(new Catelog(mCatelogName, 0));
-//			Catelog catelog = catelogs.get(index);
-//			catelog.setCount(catelog.getCount() - deleteCount);
-//			CatelogUtils.writeCatelogs(getContext(), catelogs);
+ 
 			
 			return result;
 		}

@@ -10,7 +10,7 @@ import com.willing.xyz.R;
 public class WelcomeActivity extends BaseActivity
 {
 
-	private static final int	DELAY_MILLS	= 2000;
+	private static final int	DELAY_MILLS	= 2;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
