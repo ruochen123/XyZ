@@ -60,25 +60,10 @@ public class SingerFragment extends BaseFragment implements LoaderCallbacks<Arra
 
 		return view;
 	}
-//
-//	@Override
-//	public void onStart()
-//	{
-//		super.onStart();
-//		
-//		SingerUtils.readSingerFromFile(mSingerListView);
-//	}
-//	
-//	public ListView getListView()
-//	{
-//		return mSingerListView;
-//	}
-//	
+ 
 	private void initView(View view)
 	{
 		mSingerListView = (ListView) view.findViewById(R.id.lv_singer);
-		
-//		setListViewAdapter(null);
 	}
 	
 	private void setListViewAdapter(List<Map<String, String>> data)
@@ -104,6 +89,8 @@ public class SingerFragment extends BaseFragment implements LoaderCallbacks<Arra
 
 	private void setupListener()
 	{
+		setListViewAdapter(new ArrayList<Map<String, String>>());
+		
 		mSingerListView.setOnItemClickListener(new OnItemClickListener()
 		{
 

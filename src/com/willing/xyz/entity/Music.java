@@ -19,6 +19,10 @@ public class Music
 		mDuration = 0;
 	}
 	
+	public Music(String path)
+	{
+		mPath = path;
+	}
 	public Music(String title, String album, String artists, String path,
 			int duration)
 	{

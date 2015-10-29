@@ -146,12 +146,8 @@ public class SongUtils
 			@Override
 			public void onClick(DialogInterface dialog, int which)
 			{		
-				if (deleteSong(context, music))
+				if (deleteSong(context, music, false, fromCatelog, catelogName))
 				{
-					if (fromCatelog)
-					{
-						CatelogUtils.deleteFromCatelog(context, catelogName, music);
-					}
 					Toast.makeText(context, R.string.delete_successed, Toast.LENGTH_SHORT).show();
 				}
 				else
@@ -246,7 +242,7 @@ public class SongUtils
 		});
 	}
 
-	public static boolean deleteSong(Context context, Music music)
+	public static boolean deleteSong(Context context, Music music, boolean fromSingerItem, boolean fromCatelogItem, String catelogName)
 	{
 		// 删除文件
 		File file = new File(music.getPath());
@@ -261,7 +257,11 @@ public class SongUtils
 			db.delete(MusicDatabaseHelper.TABLE_NAME, 
 					MusicDatabaseHelper.PATH + " = ? ", new String[]{music.getPath()});
 			
-			db.releaseReference();
+			// 如果从列表中删除，则更新列表
+			if (fromCatelogItem)
+			{
+				CatelogUtils.deleteFromCatelog(context, catelogName, music);
+			}
 			
 			// 改变Singer的文件，以通知Singer
 			try
@@ -270,9 +270,12 @@ public class SongUtils
 				out.write((int) System.currentTimeMillis());
 				out.close();
 				
-				out = context.openFileOutput(SingerItemActivity.SINGER_ITEM_CHANGED_FILE, Context.MODE_PRIVATE);
-				out.write((int)System.currentTimeMillis());
-				out.close();
+				if (fromSingerItem)
+				{
+					out = context.openFileOutput(SingerItemActivity.SINGER_ITEM_CHANGED_FILE, Context.MODE_PRIVATE);
+					out.write((int)System.currentTimeMillis());
+					out.close();
+				}
 				
 			} 
 			catch (IOException e)
@@ -287,7 +290,7 @@ public class SongUtils
 	
 	// 批量删除歌曲
 	public static void deleteSongs(Context context,
-			ArrayList<String> musics)
+			ArrayList<String> musics, boolean fromSingerItem, boolean fromCatelogItem, String catelogName)
 	{
 		File file = null;
 		boolean successed = false;
@@ -304,6 +307,12 @@ public class SongUtils
 				db.delete(MusicDatabaseHelper.TABLE_NAME, 
 						MusicDatabaseHelper.PATH + " = ? ", new String[]{musics.get(i)});
 				
+				// 如果从列表中删除，则更新列表
+				if (fromCatelogItem)
+				{
+					CatelogUtils.deleteFromCatelog(context, catelogName, new Music(musics.get(i)));
+				}
+				
 				// 改变Singer的文件，以通知Singer
 				try
 				{
@@ -311,9 +320,12 @@ public class SongUtils
 					out.write((int) System.currentTimeMillis());
 					out.close();
 					
-					out = context.openFileOutput(SingerItemActivity.SINGER_ITEM_CHANGED_FILE, Context.MODE_PRIVATE);
-					out.write((int)System.currentTimeMillis());
-					out.close();
+					if (fromSingerItem)
+					{
+						out = context.openFileOutput(SingerItemActivity.SINGER_ITEM_CHANGED_FILE, Context.MODE_PRIVATE);
+						out.write((int)System.currentTimeMillis());
+						out.close();
+					}
 					
 				} 
 				catch (IOException e)
@@ -323,8 +335,7 @@ public class SongUtils
 			
 			}
 		}
-
-		db.releaseReference();
+ 
 	}
 
 

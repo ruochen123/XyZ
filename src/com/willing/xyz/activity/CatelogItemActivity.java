@@ -59,7 +59,6 @@ public class CatelogItemActivity extends BaseActivity implements LoaderManager.L
 	private static final int	LOADER_ID	= 4;
  
 	private Button mPlayAll;
-	private Button mSettle;
 	private ListView mPlaylistItemListView;
 	private CatelogItemAdapter mAdapter;
 	
@@ -97,14 +96,24 @@ public class CatelogItemActivity extends BaseActivity implements LoaderManager.L
 	@Override
 	protected void onDestroy()
 	{
-		 
+		cancelPlayAllSongTask();
 		
-		if (mPlayAllSongTask != null)
+		super.onDestroy();
+	}
+	
+	private void cancelPlayAllSongTask()
+	{
+		if (mPlayAllSongTask != null && mPlayAllSongTask.getStatus() != AsyncTask.Status.FINISHED)
 		{
 			mPlayAllSongTask.cancel(false);
 		}
-		
-		super.onDestroy();
+	}
+
+	private void initView()
+	{
+		mPlaylistItemListView = (ListView) findViewById(R.id.lv_song);
+		mPlayAll = (Button) findViewById(R.id.bt_play_allsong);
+		mHeader = findViewById(R.id.ll_header);
 	}
 	
 	private void setupListener()
@@ -172,19 +181,13 @@ public class CatelogItemActivity extends BaseActivity implements LoaderManager.L
 			@Override
 			public void onClick(View v)
 			{
+				cancelPlayAllSongTask();
 				mPlayAllSongTask = new PlayAllSongTask();
 				mPlayAllSongTask.execute((SimpleAdapter)mPlaylistItemListView.getAdapter());
 			}
 		});
-	}
 	
-	private void initView()
-	{
-		mPlaylistItemListView = (ListView) findViewById(R.id.lv_song);
-		mPlayAll = (Button) findViewById(R.id.bt_play_allsong);
-		mHeader = findViewById(R.id.ll_header);
-		
-	//	setListViewAdapter(null);
+		setListViewAdapter(new ArrayList<Map<String, String>>());
 		mPlaylistItemListView.setMultiChoiceModeListener(new MultiChoiceModeListener()
 		{
 			@Override
@@ -226,22 +229,22 @@ public class CatelogItemActivity extends BaseActivity implements LoaderManager.L
 				case R.id.delete:
 					
 					AlertDialog.Builder builder = new AlertDialog.Builder(CatelogItemActivity.this);
-					builder.setTitle("确定删除所选列表？");
+					builder.setTitle("确定删除所选歌曲？");
 					builder.setPositiveButton(R.string.ok_dialog, new DialogInterface.OnClickListener()
 					{
 						@Override
 						public void onClick(DialogInterface dialog, int which)
 						{
 							Map<String, String> map = null;
-							ArrayList<String> catelogs = new ArrayList<String>();
+							ArrayList<String> musics = new ArrayList<String>();
 							SparseBooleanArray checked =  mPlaylistItemListView.getCheckedItemPositions();
 							for (int i = 0; i < checked.size(); ++i)
 							{
 								map = (Map<String, String>) mAdapter.getItem(checked.keyAt(i));
-								catelogs.add(map.get(CatelogAdapter.CATELOG_NAME));
+								musics.add(map.get(PATH));
 							}
 							
-							CatelogUtils.deleteCatelogs(CatelogItemActivity.this, catelogs);
+							SongUtils.deleteSongs(CatelogItemActivity.this, musics, false, true, mCatelogName);
 						}
 					});
 					builder.setNegativeButton(R.string.cancel_dialog, new DialogInterface.OnClickListener()
@@ -341,13 +344,14 @@ public class CatelogItemActivity extends BaseActivity implements LoaderManager.L
 			R.id.tv_album
 		};
 		mAdapter = new CatelogItemAdapter(CatelogItemActivity.this,
-				data, R.layout.song_item, from, to, mCatelogName);
+				data, R.layout.song_item, from, to, mCatelogName, mIsActionModeStarted);
 		
 		if (mPlaylistItemListView != null)
 		{
 			mPlaylistItemListView.setAdapter(mAdapter);
 		}
 	}
+	
 	@Override
 	public Intent getParentActivityIntent()
 	{
@@ -505,6 +509,11 @@ public class CatelogItemActivity extends BaseActivity implements LoaderManager.L
 			
 			for (int i = 0; i < params[0].getCount(); ++i)
 			{
+				if (isCancelled())
+				{
+					break;
+				}
+				
 				Music music = new Music();
 				@SuppressWarnings("unchecked")
 				Map<String, String> map = (Map<String, String>) params[0].getItem(i);

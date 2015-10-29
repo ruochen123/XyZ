@@ -13,6 +13,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.FileObserver;
 import android.provider.BaseColumns;
@@ -50,7 +51,7 @@ public class AllSongFragment extends BaseFragment implements
 	private AllSongAdapter 		mListAdapter;
 	private Button				mPlayAllSong;
 
-	private PlayAllSongTask playAllsongTask;
+	private PlayAllSongTask mPlayAllSongTask;
 	private View	mHeader;
 	
 	private static final int	LOADER_ID	= 1;
@@ -73,10 +74,7 @@ public class AllSongFragment extends BaseFragment implements
 	@Override
 	public void onDestroyView()
 	{
-		if (playAllsongTask != null)
-		{
-			playAllsongTask.cancel(false);
-		}
+		cancelPlayAllSongTask();
 		
 		super.onDestroyView();
 	}
@@ -86,7 +84,46 @@ public class AllSongFragment extends BaseFragment implements
 		mAllSongListView = (ListView) view.findViewById(R.id.lv_allsong);
 		mPlayAllSong = (Button) view.findViewById(R.id.bt_play_allsong);
 		mHeader = view.findViewById(R.id.ll_header);
-		
+
+	}
+
+	private void setupListener()
+	{
+
+		mAllSongListView.setOnItemClickListener(new OnItemClickListener()
+		{
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,
+					int position, long id)
+			{
+				Music music = new Music();
+				Cursor cursor = (Cursor)mListAdapter.getItem(position);
+				music.setAlbum(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.ALBUM)));
+				music.setArtist(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.ARTIST)));
+				music.setPath(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.PATH)));
+				music.setTitle(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.TITLE)));
+				music.setDuration(cursor.getInt(cursor.getColumnIndex(MusicDatabaseHelper.DURATION)));
+				
+				if (app.getPlayService() != null)
+				{
+					app.getPlayService().addToPlayList(music, true);
+				}
+			}
+		});
+
+		mPlayAllSong.setOnClickListener(new OnClickListener()
+		{
+
+			@Override
+			public void onClick(View v)
+			{
+				cancelPlayAllSongTask();
+				mPlayAllSongTask = new PlayAllSongTask();
+				mPlayAllSongTask.execute(mListAdapter.getCursor());
+			}
+		});
+	
 		String[] from = 
 			{
 				MusicDatabaseHelper.TITLE,
@@ -168,7 +205,7 @@ public class AllSongFragment extends BaseFragment implements
 								musics.add(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.PATH)));
 							}
 							
-							SongUtils.deleteSongs(getActivity(), musics);
+							SongUtils.deleteSongs(getActivity(), musics, false, false, null);
 						}
 					});
 					builder.setNegativeButton(R.string.cancel_dialog, new DialogInterface.OnClickListener()
@@ -221,43 +258,13 @@ public class AllSongFragment extends BaseFragment implements
 		});
 		mAllSongListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
 	}
-
-	private void setupListener()
+	
+	private void cancelPlayAllSongTask()
 	{
-
-		mAllSongListView.setOnItemClickListener(new OnItemClickListener()
+		if (mPlayAllSongTask != null && mPlayAllSongTask.getStatus() != AsyncTask.Status.FINISHED)
 		{
-
-			@Override
-			public void onItemClick(AdapterView<?> parent, View view,
-					int position, long id)
-			{
-				Music music = new Music();
-				Cursor cursor = (Cursor)mListAdapter.getItem(position);
-				music.setAlbum(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.ALBUM)));
-				music.setArtist(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.ARTIST)));
-				music.setPath(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.PATH)));
-				music.setTitle(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.TITLE)));
-				music.setDuration(cursor.getInt(cursor.getColumnIndex(MusicDatabaseHelper.DURATION)));
-				
-				if (app.getPlayService() != null)
-				{
-					app.getPlayService().addToPlayList(music, true);
-				}
-			}
-		});
-
-		mPlayAllSong.setOnClickListener(new OnClickListener()
-		{
-
-			@Override
-			public void onClick(View v)
-			{
-				playAllsongTask = new PlayAllSongTask();
-				playAllsongTask.execute(mListAdapter.getCursor());
-			}
-		});
-
+			mPlayAllSongTask.cancel(false);
+		}
 	}
 
 //#start LoaderCallback·½·¨

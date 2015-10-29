@@ -21,9 +21,13 @@ public class PlayAllSongTask extends AsyncTask<Cursor, Void, ArrayList<Music>>
 			return musics;
 		}
 		
-		
 		for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext())
 		{
+			if (isCancelled())
+			{
+				break;
+			}
+			
 			Music music = new Music();
 			music.setAlbum(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.ALBUM)));
 			music.setArtist(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.ARTIST)));

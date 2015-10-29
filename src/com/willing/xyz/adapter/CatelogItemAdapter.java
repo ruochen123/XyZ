@@ -34,13 +34,14 @@ public class CatelogItemAdapter extends SimpleAdapter
 	
 	public CatelogItemAdapter(Context context,
 			List<? extends Map<String, ?>> data, int resource, String[] from,
-			int[] to, String catelog)
+			int[] to, String catelog, boolean isStarted)
 	{
 		super(context, data, resource, from, to);
 		
 		mContext = context;
 		mInflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		mCatelog = catelog;
+		mActionModeStarted = isStarted;
 	}
 
 	public void setActionModeStarted(boolean started)

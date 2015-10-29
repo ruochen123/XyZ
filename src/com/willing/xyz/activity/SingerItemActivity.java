@@ -50,24 +50,25 @@ import com.willing.xyz.util.SongUtils;
 
 public class SingerItemActivity extends BaseActivity implements LoaderCallbacks<Cursor>
 {
+	// 当歌曲被删除时，修改该文件，以通知该Activity重新加载数据（用Loader）。
+	// 因为该Activity每次onCreate时会重新加载数据，所以修改该文件的情况应该是在该Activity onResume情况下。
 	public static final String	SINGER_ITEM_CHANGED_FILE	= "singer_item_changed";
+	
+	public static final String SINGER_NAME = "singerName";
+	
+	private static final int	LOAD_ID	= 5;
 	
 	private ListView	mSingerItemListView;
 	private SingerItemAdapter mListAdapter;
 	
-	private LoadSingerItemTask loadSingerItemTask;
-	private PlayAllSongTask playAllsongTask;
-	
+	private PlayAllSongTask mPlayAllSongTask;
 	private Button mPlayAll;
 	
 	private String mSingerName;
 	
-	private View	mHeader;
-	
-	public static final String SINGER_NAME = "singerName";
+	// ListView前面的View，用来在ActionMode启动时，隐藏。
+	private View	mHeader;	
 
-	private static final int	LOAD_ID	= 5;
-	
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
@@ -85,9 +86,6 @@ public class SingerItemActivity extends BaseActivity implements LoaderCallbacks<
 		actionBar.setBackgroundDrawable(new ColorDrawable(Color.RED));
 		actionBar.setDisplayOptions(ActionBar.DISPLAY_HOME_AS_UP | ActionBar.DISPLAY_SHOW_TITLE);
 		actionBar.setTitle(mSingerName);
- 
-		loadSingerItemTask = new LoadSingerItemTask();
-		loadSingerItemTask.execute(mSingerName);
 		
 		Bundle args = new Bundle();
 		args.putString(SINGER_NAME, mSingerName);
@@ -99,13 +97,17 @@ public class SingerItemActivity extends BaseActivity implements LoaderCallbacks<
 	@Override
 	protected void onDestroy()
 	{
-		loadSingerItemTask.cancel(false);
-		if (playAllsongTask != null)
-		{
-			playAllsongTask.cancel(false);
-		}
+		cancelPlayAllSongTask();
 		
 		super.onDestroy();
+	}
+	
+	private void cancelPlayAllSongTask()
+	{
+		if (mPlayAllSongTask != null && mPlayAllSongTask.getStatus() != AsyncTask.Status.FINISHED)
+		{
+			mPlayAllSongTask.cancel(false);
+		}
 	}
 	
 	private void initView()
@@ -113,7 +115,50 @@ public class SingerItemActivity extends BaseActivity implements LoaderCallbacks<
 		mSingerItemListView = (ListView) findViewById(R.id.lv_song);
 		mPlayAll = (Button) findViewById(R.id.bt_play_allsong);
 		mHeader = findViewById(R.id.ll_header);
+	}
+
+	private void setupListener()
+	{
+		mSingerItemListView.setOnItemClickListener(new OnItemClickListener()
+		{
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,
+					int position, long id)
+			{
+				Music music = new Music();
+				Cursor cursor = (Cursor)mListAdapter.getItem(position);
+				music.setAlbum(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.ALBUM)));
+				music.setArtist(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.ARTIST)));
+				music.setPath(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.PATH)));
+				music.setTitle(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.TITLE)));
+				music.setDuration(cursor.getInt(cursor.getColumnIndex(MusicDatabaseHelper.DURATION)));
+				
+				
+				if (app.getPlayService() != null)
+				{
+					app.getPlayService().addToPlayList(music, true);
+
+					Intent intent = new Intent(SingerItemActivity.this, PlayingActivity.class);
+					startActivity(intent);
+				}
+			}
+			
+		});	
 		
+		mPlayAll.setOnClickListener(new OnClickListener()
+		{
+			
+			@Override
+			public void onClick(View v)
+			{
+				cancelPlayAllSongTask();
+				
+				mPlayAllSongTask = new PlayAllSongTask();
+				mPlayAllSongTask.execute(mListAdapter.getCursor());
+			}
+		});
+	
 		String[] from = 
 			{
 				MusicDatabaseHelper.TITLE,
@@ -184,7 +229,7 @@ public class SingerItemActivity extends BaseActivity implements LoaderCallbacks<
 								musics.add(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.PATH)));
 							}
 							
-							SongUtils.deleteSongs(SingerItemActivity.this, musics);
+							SongUtils.deleteSongs(SingerItemActivity.this, musics, true, false, null);
 						}
 					});
 					builder.setNegativeButton(R.string.cancel_dialog, new DialogInterface.OnClickListener()
@@ -236,49 +281,6 @@ public class SingerItemActivity extends BaseActivity implements LoaderCallbacks<
 			}
 		});
 		mSingerItemListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
- 
-
-	}
-	private void setupListener()
-	{
-		mSingerItemListView.setOnItemClickListener(new OnItemClickListener()
-		{
-
-			@Override
-			public void onItemClick(AdapterView<?> parent, View view,
-					int position, long id)
-			{
-				Music music = new Music();
-				Cursor cursor = (Cursor)mListAdapter.getItem(position);
-				music.setAlbum(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.ALBUM)));
-				music.setArtist(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.ARTIST)));
-				music.setPath(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.PATH)));
-				music.setTitle(cursor.getString(cursor.getColumnIndex(MusicDatabaseHelper.TITLE)));
-				music.setDuration(cursor.getInt(cursor.getColumnIndex(MusicDatabaseHelper.DURATION)));
-				
-				
-				if (app.getPlayService() != null)
-				{
-					app.getPlayService().addToPlayList(music, true);
-
-					Intent intent = new Intent(SingerItemActivity.this, PlayingActivity.class);
-					startActivity(intent);
-				}
-			}
-			
-		});
-		
-		
-		mPlayAll.setOnClickListener(new OnClickListener()
-		{
-			
-			@Override
-			public void onClick(View v)
-			{
-				playAllsongTask = new PlayAllSongTask();
-				playAllsongTask.execute(mListAdapter.getCursor());
-			}
-		});
 	}
 	
 	@Override
@@ -287,36 +289,6 @@ public class SingerItemActivity extends BaseActivity implements LoaderCallbacks<
 		return getIntent();
 	}
 	
-	private class LoadSingerItemTask extends AsyncTask<String, Void, Cursor>
-	{
-
-		@Override
-		protected Cursor doInBackground(String... params)
-		{
-			Cursor cursor = null;
-			
-			MusicDatabaseHelper helper = new MusicDatabaseHelper(SingerItemActivity.this);
-			SQLiteDatabase db = helper.getReadableDatabase();
-			
-			cursor = db.query(MusicDatabaseHelper.TABLE_NAME, new String[]
-			{ BaseColumns._ID, TITLE, ARTIST, ALBUM, DURATION, PATH }, ARTIST + " = ?", params, null, null,
-					null);
-			
-			
-			return cursor;
-		}
-		
-		@Override
-		protected void onPostExecute(Cursor result)
-		{
-			if (mListAdapter != null)
-			{
-				mListAdapter.changeCursor(result);
-			}
-		}
-	}
-
-
 	//#start LoaderCallback
 		@Override
 		public Loader<Cursor> onCreateLoader(int arg0, Bundle arg1)

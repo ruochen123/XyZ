@@ -73,8 +73,99 @@ public class CatelogFragment extends BaseFragment implements LoaderCallbacks<Arr
 		mPlaylistListView = (ListView)view.findViewById(R.id.lv_playlist);
 		mNewPlaylist = (Button) view.findViewById(R.id.bt_new_playlist);
 		mHeader = view.findViewById(R.id.ll_header);
-	 
-//		setListViewAdapter(null);
+	}
+	
+	private void setListViewAdapter(List<Map<String, String>> data)
+	{
+		String[] from = new String[]{
+			CatelogAdapter.CATELOG_NAME, 
+			CatelogAdapter.CATELOG_COUNT
+		};
+		int[] to = new int[]{
+			R.id.tv_playlist_name,
+			R.id.tv_playlist_num
+		};
+		
+		if (data == null)
+		{
+			data = new ArrayList<Map<String, String>>();
+		}
+		
+		mAdapter = new CatelogAdapter(getActivity(), data, R.layout.catelog_item, from, to, mIsActionModeStarted);
+		
+		mPlaylistListView.setAdapter(mAdapter);
+	}
+
+	private void setupListener()
+	{
+		mPlaylistListView.setOnItemClickListener(new OnItemClickListener()
+		{
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,
+					int position, long id)
+			{
+				TextView tvPlaylistName = (TextView) view.findViewById(R.id.tv_playlist_name);
+				String name = tvPlaylistName.getText().toString();
+				
+				Intent intent = new Intent(CatelogFragment.this.getActivity(), CatelogItemActivity.class);
+				intent.putExtra(CatelogItemActivity.CATELOG_NAME, name);
+				startActivity(intent);
+			}
+		});
+		
+		mNewPlaylist.setOnClickListener(new OnClickListener()
+		{
+			
+			@Override
+			public void onClick(View v)
+			{
+				AlertDialog.Builder build = new AlertDialog.Builder(CatelogFragment.this.getActivity());
+				build.setTitle(R.string.new_playlist_dialog);
+				final EditText edit = new EditText(CatelogFragment.this.getActivity());
+				build.setView(edit);
+				build.setPositiveButton(R.string.ok_dialog, new DialogInterface.OnClickListener()
+				{
+
+					@Override
+					public void onClick(DialogInterface dialog, int which)
+					{
+						String name = edit.getText().toString().trim();
+						if ("".equals(name))
+						{
+							Toast.makeText(CatelogFragment.this.getActivity(), R.string.playlist_name_is_empty, Toast.LENGTH_LONG).show();
+							return;
+						}
+						
+						if (!CatelogUtils.getCatelogsName(getActivity()).contains(name))
+						{
+							CatelogUtils.createCatelog(getActivity(), name);
+						}
+						else
+						{
+							Toast.makeText(CatelogFragment.this.getActivity(), R.string.new_playlist_same, Toast.LENGTH_SHORT).show();
+						}
+					}
+				});
+				build.setNegativeButton(R.string.cancel_dialog, new DialogInterface.OnClickListener()
+				{
+
+					@Override
+					public void onClick(DialogInterface dialog, int which)
+					{
+						dialog.dismiss();
+					}
+					 
+				});
+				build.setCancelable(true);
+				
+				build.create().show();
+				
+			}
+		});
+
+		 
+		setListViewAdapter(new ArrayList<Map<String, String>>());
 		mPlaylistListView.setMultiChoiceModeListener(new MultiChoiceModeListener()
 		{
 			@Override
@@ -169,96 +260,6 @@ public class CatelogFragment extends BaseFragment implements LoaderCallbacks<Arr
 			}
 		});
 		mPlaylistListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
-	}
-	
-	private void setListViewAdapter(List<Map<String, String>> data)
-	{
-		String[] from = new String[]{
-			CatelogAdapter.CATELOG_NAME, 
-			CatelogAdapter.CATELOG_COUNT
-		};
-		int[] to = new int[]{
-			R.id.tv_playlist_name,
-			R.id.tv_playlist_num
-		};
-		
-		if (data == null)
-		{
-			data = new ArrayList<Map<String, String>>();
-		}
-		
-		mAdapter = new CatelogAdapter(getActivity(), data, R.layout.catelog_item, from, to, mIsActionModeStarted);
-		
-		mPlaylistListView.setAdapter(mAdapter);
-	}
-
-	private void setupListener()
-	{
-		mPlaylistListView.setOnItemClickListener(new OnItemClickListener()
-		{
-
-			@Override
-			public void onItemClick(AdapterView<?> parent, View view,
-					int position, long id)
-			{
-				TextView tvPlaylistName = (TextView) view.findViewById(R.id.tv_playlist_name);
-				String name = tvPlaylistName.getText().toString();
-				
-				Intent intent = new Intent(CatelogFragment.this.getActivity(), CatelogItemActivity.class);
-				intent.putExtra(CatelogItemActivity.CATELOG_NAME, name);
-				startActivity(intent);
-			}
-		});
-		
-		mNewPlaylist.setOnClickListener(new OnClickListener()
-		{
-			
-			@Override
-			public void onClick(View v)
-			{
-				AlertDialog.Builder build = new AlertDialog.Builder(CatelogFragment.this.getActivity());
-				build.setTitle(R.string.new_playlist_dialog);
-				final EditText edit = new EditText(CatelogFragment.this.getActivity());
-				build.setView(edit);
-				build.setPositiveButton(R.string.ok_dialog, new DialogInterface.OnClickListener()
-				{
-
-					@Override
-					public void onClick(DialogInterface dialog, int which)
-					{
-						String name = edit.getText().toString().trim();
-						if ("".equals(name))
-						{
-							Toast.makeText(CatelogFragment.this.getActivity(), R.string.playlist_name_is_empty, Toast.LENGTH_LONG).show();
-							return;
-						}
-						
-						if (!CatelogUtils.getCatelogsName(getActivity()).contains(name))
-						{
-							CatelogUtils.createCatelog(getActivity(), name);
-						}
-						else
-						{
-							Toast.makeText(CatelogFragment.this.getActivity(), R.string.new_playlist_same, Toast.LENGTH_SHORT).show();
-						}
-					}
-				});
-				build.setNegativeButton(R.string.cancel_dialog, new DialogInterface.OnClickListener()
-				{
-
-					@Override
-					public void onClick(DialogInterface dialog, int which)
-					{
-						dialog.dismiss();
-					}
-					 
-				});
-				build.setCancelable(true);
-				
-				build.create().show();
-				
-			}
-		});
 	}
 
 	
