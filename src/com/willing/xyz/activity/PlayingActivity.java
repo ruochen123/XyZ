@@ -3,6 +3,7 @@ package com.willing.xyz.activity;
 import java.lang.reflect.Field;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.view.Gravity;
@@ -18,8 +19,10 @@ import com.willing.xyz.R;
 import com.willing.xyz.entity.Music;
 import com.willing.xyz.service.MusicPlayService;
 import com.willing.xyz.service.MusicPlayService.MusicPlayerListener;
+import com.willing.xyz.util.LrcParser;
 import com.willing.xyz.util.SongUtils;
 import com.willing.xyz.util.TimeUtils;
+import com.willing.xyz.view.LrcView;
 
 /**
  * 播放界面
@@ -48,6 +51,7 @@ public class PlayingActivity extends BaseActivity implements MusicPlayerListener
 	private TextView	mCurTime;
 
 	private TextView	mTotalTime;
+	private LrcView	mLrcView;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -113,6 +117,14 @@ public class PlayingActivity extends BaseActivity implements MusicPlayerListener
 		// 更新UI线程
 		updateThread = new UpdateThread();
 		updateThread.start();
+		
+		if (mLrcView.getPath() == null)
+		{
+			if (mService != null && mService.getPlayingMusic() != null)
+			{
+				mLrcView.setPath(LrcParser.musicToLrcPath(mService.getPlayingMusic().getPath()));
+			}
+		}
 	}
 	
 	@Override
@@ -161,6 +173,7 @@ public class PlayingActivity extends BaseActivity implements MusicPlayerListener
 			mPause.setImageResource(R.drawable.start);
 		}
 	 
+		mLrcView.setCurTime((int) (mService.getCurPos() / 10));
 	}
 	
 	// 更新所有可能改变的UI
@@ -321,6 +334,7 @@ public class PlayingActivity extends BaseActivity implements MusicPlayerListener
 		mCurTime = (TextView)findViewById(R.id.tv_cur_time);
 		mTotalTime = (TextView)findViewById(R.id.tv_total_time);
  
+		mLrcView = (LrcView)findViewById(R.id.lrcView);
 		
 		boolean isPlaying = false;
 		if (mService != null)
@@ -412,9 +426,13 @@ public class PlayingActivity extends BaseActivity implements MusicPlayerListener
 			mArtist.setText(info.getArtist());
 			mTotalTime.setText(TimeUtils.parseDuration(info.getDuration()));
 			mSeekBar.setMax(info.getDuration());
+			
+			mLrcView.setPath(LrcParser.musicToLrcPath(info.getPath()));
 		}
 	}
 //#end
+	
+ 
 	
 	private class UpdateThread extends Thread
 	{

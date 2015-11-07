@@ -23,7 +23,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
-import android.support.v4.app.FragmentActivity;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
@@ -31,8 +30,10 @@ import android.view.WindowManager.LayoutParams;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.PopupWindow;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.willing.xyz.R;
@@ -201,6 +202,7 @@ public class SongUtils
 		View view = activity.getLayoutInflater().inflate(R.layout.popupwindow_play_list, null);
 		
 		ListView listView = (ListView) view.findViewById(R.id.play_list);
+		TextView clearTextView = (TextView) view.findViewById(R.id.tv_clear_play_list);
 		
 		// 设置播放列表
 		ArrayList<Music> infoList = service.getPlayList();
@@ -216,7 +218,7 @@ public class SongUtils
 			data.add(songSinger);
 		}
 	
-		ArrayAdapter<String> adapter = new ArrayAdapter<>(activity, R.layout.play_list_item, R.id.text, data);
+		final ArrayAdapter<String> adapter = new ArrayAdapter<>(activity, R.layout.play_list_item, R.id.text, data);
 		listView.setAdapter(adapter);
 		
 		// 显示播放列表
@@ -240,6 +242,19 @@ public class SongUtils
 				service.playNewMusic();
 			}
 		});
+		clearTextView.setOnClickListener(new View.OnClickListener()
+		{
+			
+			@Override
+			public void onClick(View v)
+			{
+				service.getPlayList().clear();
+				
+				adapter.clear();
+				adapter.notifyDataSetChanged();
+			}
+		});
+		
 	}
 
 	public static boolean deleteSong(Context context, Music music, boolean fromSingerItem, boolean fromCatelogItem, String catelogName)

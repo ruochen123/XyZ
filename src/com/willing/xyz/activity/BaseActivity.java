@@ -1,5 +1,6 @@
 package com.willing.xyz.activity;
 
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 
@@ -14,6 +15,8 @@ public class BaseActivity extends ActionBarActivity
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
+		
+		setVolumeControlStream(AudioManager.STREAM_MUSIC);
 		
 		app = XyzApplication.getInstance();
 		

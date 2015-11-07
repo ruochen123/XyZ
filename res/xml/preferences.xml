@@ -4,6 +4,8 @@
     <PreferenceCategory 
         android:title="扫描歌曲"
         android:key="scanMusic">
+        
+      
 	    
 	    <EditTextPreference 
 	        android:key="minDuration"

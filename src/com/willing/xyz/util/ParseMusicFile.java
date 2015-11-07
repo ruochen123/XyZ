@@ -40,7 +40,7 @@ public class ParseMusicFile
 			{
 				music.setTitle(tag.getFirst(FieldKey.TITLE));
 				music.setAlbum(tag.getFirst(FieldKey.ALBUM));
-				music.setArtist(tag.getFirst(FieldKey.ALBUM_ARTIST));
+				music.setArtist(tag.getFirst(FieldKey.ARTIST));
 			}
 			catch (KeyNotFoundException ex)
 			{

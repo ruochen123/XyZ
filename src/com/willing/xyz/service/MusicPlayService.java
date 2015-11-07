@@ -24,7 +24,6 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationCompat.Builder;
 
 import com.willing.xyz.R;
-import com.willing.xyz.XyzApplication;
 import com.willing.xyz.activity.MainActivity;
 import com.willing.xyz.entity.Music;
 import com.willing.xyz.receiver.RemoteControlRecevier;
@@ -234,7 +233,7 @@ public class MusicPlayService extends Service implements OnAudioFocusChangeListe
 		}
 	}
 	
-	public long getCurPos()
+	public int getCurPos()
 	{
 		if (mPlayer == null)
 		{
@@ -256,6 +255,10 @@ public class MusicPlayService extends Service implements OnAudioFocusChangeListe
 			return;
 		}
 		if (!requestFocus())
+		{
+			return;
+		}
+		if (mIndex >= mPlayList.size() - 1 || mIndex < 0)
 		{
 			return;
 		}
@@ -477,6 +480,10 @@ public class MusicPlayService extends Service implements OnAudioFocusChangeListe
 
 	public void next()
 	{
+		if (mPlayList.size() == 0)
+		{
+			return;
+		}
 		mIndex = (mIndex + 1) % mPlayList.size();
 		playNewMusic();
 	}

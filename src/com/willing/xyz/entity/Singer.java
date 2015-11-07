@@ -14,7 +14,7 @@ public class Singer
 	
 	public Singer(String n, int c)
 	{
-		name = n;
+		name = getString(n);
 		count = c;
 	}
 	
@@ -24,7 +24,7 @@ public class Singer
 	}
 	public void setName(String name)
 	{
-		this.name = name;
+		this.name = getString(name);
 	}
 	public int getCount()
 	{
@@ -38,6 +38,15 @@ public class Singer
 	public void inc()
 	{
 		count++;
+	}
+	
+	public String getString(String str)
+	{
+		if (str.trim() == "")
+		{
+			return "δ֪";
+		}
+		return str;
 	}
 	
 	@Override

@@ -52,6 +52,8 @@ public class PlayAllSongTask extends AsyncTask<Cursor, Void, ArrayList<Music>>
 		if (app.getPlayService() != null)
 		{
 			app.getPlayService().addToPlayList(result, true);
+			
+
 		}
 	}
 }

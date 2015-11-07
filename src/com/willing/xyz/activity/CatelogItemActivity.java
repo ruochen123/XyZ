@@ -184,6 +184,9 @@ public class CatelogItemActivity extends BaseActivity implements LoaderManager.L
 				cancelPlayAllSongTask();
 				mPlayAllSongTask = new PlayAllSongTask();
 				mPlayAllSongTask.execute((SimpleAdapter)mPlaylistItemListView.getAdapter());
+				
+				Intent intent = new Intent(CatelogItemActivity.this, PlayingActivity.class);
+				startActivity(intent);
 			}
 		});
 	
@@ -535,6 +538,8 @@ public class CatelogItemActivity extends BaseActivity implements LoaderManager.L
 			if (app.getPlayService() != null)
 			{
 				app.getPlayService().addToPlayList(result, true);
+				
+
 			}
 		}
 		

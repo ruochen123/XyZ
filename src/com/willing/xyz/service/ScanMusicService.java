@@ -14,7 +14,6 @@ import android.app.IntentService;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
-import android.util.Log;
 
 import com.willing.xyz.XyzApplication;
 import com.willing.xyz.entity.Music;
@@ -25,7 +24,7 @@ public class ScanMusicService extends IntentService
 {
 	
 	// 通过扫描的后缀名
-	private static String[] exts = {"mp3", "aac"};
+	private static String[] exts = {"mp3", "aac", "wav", "wma", "ape"};
 	
 	private SQLiteDatabase mDb;
 	private MusicDatabaseHelper mDbHelper; 
@@ -93,6 +92,8 @@ public class ScanMusicService extends IntentService
 		}
 		mDb.setTransactionSuccessful();
 		mDb.endTransaction();
+		
+		stopSelf();
 	}
 	
 	// 扫描文件,并添加到数据库中
@@ -118,7 +119,7 @@ public class ScanMusicService extends IntentService
 					{
 						for (int i = 0; i < exts.length; ++i)
 						{
-							if (pathname.getName().endsWith(exts[i]))
+							if (pathname.getName().toLowerCase().endsWith(exts[i].toLowerCase()))
 							{
 								return true;
 							}

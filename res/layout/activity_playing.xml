@@ -1,16 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
  
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xyz="http://schemas.android.com/apk/res/com.willing.xyz"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     >
     
-    <TextView 
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:text="歌词"/>
+   <com.willing.xyz.view.LrcView 
+       android:id="@+id/lrcView"
+       android:layout_width="match_parent"
+       android:layout_height="0dp"
+       android:layout_weight="1"
+       android:background="#000000"
+       xyz:textColor="#ffffff"
+       xyz:curLrcColor="#ff0000"
+       xyz:leading="10dp"
+       xyz:textSize="16sp"
+       />
 
     
 	<RelativeLayout  

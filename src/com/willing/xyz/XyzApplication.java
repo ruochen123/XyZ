@@ -15,11 +15,9 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.IBinder;
-import android.preference.Preference;
 import android.preference.PreferenceManager;
 
 import com.willing.xyz.activity.SettingsActivity;
-import com.willing.xyz.fragment.SettingsFragment;
 import com.willing.xyz.service.MusicPlayService;
 import com.willing.xyz.service.MusicPlayService.MusicPlayBinder;
 import com.willing.xyz.service.ScanMusicService;
@@ -188,7 +186,7 @@ public class XyzApplication extends Application
 		
 		getPlayService().stopForeground(true);
 		getPlayService().pause();
-		getPlayService().stopSelf();
+		unbindService(mServiceConn);
  
 		
 	}

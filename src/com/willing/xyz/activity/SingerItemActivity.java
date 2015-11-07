@@ -42,6 +42,7 @@ import android.widget.CheckBox;
 import android.widget.ListView;
 
 import com.willing.xyz.R;
+import com.willing.xyz.XyzApplication;
 import com.willing.xyz.adapter.SingerItemAdapter;
 import com.willing.xyz.entity.Music;
 import com.willing.xyz.util.MusicDatabaseHelper;
@@ -156,6 +157,9 @@ public class SingerItemActivity extends BaseActivity implements LoaderCallbacks<
 				
 				mPlayAllSongTask = new PlayAllSongTask();
 				mPlayAllSongTask.execute(mListAdapter.getCursor());
+				
+				Intent intent = new Intent(SingerItemActivity.this, PlayingActivity.class);
+				startActivity(intent);
 			}
 		});
 	

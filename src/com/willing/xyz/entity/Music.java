@@ -26,9 +26,9 @@ public class Music
 	public Music(String title, String album, String artists, String path,
 			int duration)
 	{
-		mTitle = title;
-		mAlbum = album;
-		mArtist = artists;
+		mTitle = getString(title);
+		mAlbum = getString(album);
+		mArtist = getString(artists);
 		mPath = path;
 		mDuration = duration;
 	}
@@ -40,7 +40,7 @@ public class Music
 	}
 	public void setTitle(String title)
 	{
-		mTitle = title;
+		mTitle = getString(title);
 	}
 	public String getAlbum()
 	{
@@ -48,7 +48,7 @@ public class Music
 	}
 	public void setAlbum(String album)
 	{
-		mAlbum = album;
+		mAlbum = getString(album);
 	}
 	public String getArtist()
 	{
@@ -56,7 +56,7 @@ public class Music
 	}
 	public void setArtist(String artists)
 	{
-		mArtist = artists;
+		mArtist = getString(artists);
 	}
 	public String getPath()
 	{
@@ -73,6 +73,15 @@ public class Music
 	public void setDuration(int duration)
 	{
 		mDuration = duration;
+	}
+	
+	public String getString(String str)
+	{
+		if (str.trim() == "")
+		{
+			return "δ֪";
+		}
+		return str;
 	}
 
 	@Override
